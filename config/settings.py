@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
 
-from config.google import GoogleSheetsConfig
+from config.database import DatabaseConfig
 from config.storage import StorageConfig
 
 # Load environment variables
@@ -47,7 +47,7 @@ class Settings(BaseModel):
     """Main application settings."""
 
     telegram: TelegramConfig
-    google_sheets: GoogleSheetsConfig
+    database: DatabaseConfig
     storage: StorageConfig
     logging: LoggingConfig
 
@@ -67,11 +67,8 @@ def load_settings() -> Settings:
                 bot_token=os.getenv("BOT_TOKEN", ""),
                 leader_telegram_id=int(os.getenv("LEADER_TELEGRAM_ID", "0")),
             ),
-            google_sheets=GoogleSheetsConfig(
-                credentials_json=os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON"),
-                credentials=os.getenv("GOOGLE_CREDENTIALS"),
-                spreadsheet_id=os.getenv("SPREADSHEET_ID", ""),
-                sheet_name=os.getenv("SHEET_NAME", "Игроки"),
+            database=DatabaseConfig(
+                database_url=os.getenv("DATABASE_URL", ""),
             ),
             storage=StorageConfig(
                 screenshots_dir=os.getenv("SCREENSHOTS_DIR", "data/screenshots"),
@@ -88,7 +85,3 @@ def load_settings() -> Settings:
 
     except ValueError as e:
         raise ValueError(f"Configuration error: {e}")
-
-
-# Global settings instance
-settings = load_settings()

@@ -14,6 +14,9 @@ class Player:
     registration_date: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
     status: str = "Активен"
     added_by: str = "bot"
+    exclusion_date: Optional[str] = None
+    exclusion_reason: Optional[str] = None
+    excluded_by: Optional[str] = None
     notes: str = ""
 
     def to_dict(self) -> dict:
@@ -31,6 +34,9 @@ class Player:
             "registration_date": self.registration_date,
             "status": self.status,
             "added_by": self.added_by,
+            "exclusion_date": self.exclusion_date,
+            "exclusion_reason": self.exclusion_reason,
+            "excluded_by": self.excluded_by,
             "notes": self.notes,
         }
 
@@ -71,6 +77,9 @@ class Player:
             registration_date=data.get("registration_date", datetime.now().strftime("%Y-%m-%d")),
             status=data.get("status", "Активен"),
             added_by=data.get("added_by", "bot"),
+            exclusion_date=data.get("exclusion_date"),
+            exclusion_reason=data.get("exclusion_reason"),
+            excluded_by=data.get("excluded_by"),
             notes=data.get("notes", ""),
         )
 
