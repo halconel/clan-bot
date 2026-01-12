@@ -1,0 +1,74 @@
+# Environment variables and credentials
+.env
+.env.local
+.env.*.local
+
+# Google Sheets API credentials
+config/credentials.json
+credentials.json
+
+# Data directory (screenshots and temporary storage)
+data/
+*.json
+
+# Allow specific JSON files
+!requirements.txt
+!package.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+bot.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Project specific - exclude todo and plans
+todo.md
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
