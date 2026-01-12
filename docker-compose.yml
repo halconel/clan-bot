@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: clan-bot-postgres
+    environment:
+      POSTGRES_DB: clan_bot
+      POSTGRES_USER: clan_bot_user
+      POSTGRES_PASSWORD: clan_bot_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clan_bot_user -d clan_bot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    container_name: clan-bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Bot configuration
+      BOT_TOKEN: ${BOT_TOKEN}
+      LEADER_TELEGRAM_ID: ${LEADER_TELEGRAM_ID}
+
+      # Database configuration
+      DATABASE_URL: postgresql+asyncpg://clan_bot_user:clan_bot_password@postgres:5432/clan_bot
+
+      # Storage configuration
+      SCREENSHOTS_DIR: data/screenshots
+      TEMP_STORAGE_FILE: data/pending.json
+
+      # Logging
+      LOG_LEVEL: INFO
+      LOG_FILE: bot.log
+    volumes:
+      - ./data:/app/data
+      - ./bot.log:/app/bot.log
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

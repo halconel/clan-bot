@@ -1,0 +1,11 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "sh -c 'uv run alembic upgrade head && uv run python main.py'"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[build.watch]
+patterns = ["**/*.py", "pyproject.toml", "alembic/**", "bot/**", "config/**", "database/**"]

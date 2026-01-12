@@ -1,0 +1,61 @@
+# Environment files
+.env
+.env.example
+
+# Data directory (screenshots, logs)
+data/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# UV cache
+.uv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# CI/CD
+.github/
+
+# Alembic (keep only necessary files)
+alembic.ini
+alembic/
+
+# Tests
+tests/
+pytest.ini
+
+# Linting
+.ruff_cache/
+mypy_cache/
+.mypy_cache/
