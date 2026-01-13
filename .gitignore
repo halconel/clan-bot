@@ -72,3 +72,4 @@ todo.md
 *.tmp
 *.bak
 *.orig
+backups/
