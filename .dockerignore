@@ -47,9 +47,9 @@ docs/
 # CI/CD
 .github/
 
-# Alembic (keep only necessary files)
-alembic.ini
-alembic/
+# Alembic - KEEP for migrations in production
+# alembic.ini (needed)
+# alembic/ (needed)
 
 # Tests
 tests/
