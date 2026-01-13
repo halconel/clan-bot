@@ -7,6 +7,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
+from config.settings import Settings
 from database.database import Database
 from database.repository import PlayerRepository
 from models.player import Player
@@ -21,15 +22,15 @@ def is_admin(user_id: int, settings) -> bool:
 
 
 @router.callback_query(F.data.startswith("approve:"))
-async def process_approve(callback: CallbackQuery) -> None:
+async def process_approve(callback: CallbackQuery, db: Database, settings: Settings) -> None:
     """
     Handle approval of pending registration.
 
     Args:
         callback: Callback query from approve button
+        db: Database instance from dispatcher
+        settings: Settings instance from dispatcher
     """
-    settings = callback.bot.get("settings")
-
     # Check if user is admin
     if not is_admin(callback.from_user.id, settings):
         await callback.answer("❌ У вас нет прав для выполнения этого действия.", show_alert=True)
@@ -37,8 +38,6 @@ async def process_approve(callback: CallbackQuery) -> None:
 
     # Extract telegram_id from callback data
     telegram_id = int(callback.data.split(":")[1])
-
-    db: Database = callback.bot.get("db")
 
     async for session in db.get_session():
         repo = PlayerRepository(session)
@@ -99,15 +98,15 @@ async def process_approve(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("reject:"))
-async def process_reject(callback: CallbackQuery) -> None:
+async def process_reject(callback: CallbackQuery, db: Database, settings: Settings) -> None:
     """
     Handle rejection of pending registration.
 
     Args:
         callback: Callback query from reject button
+        db: Database instance from dispatcher
+        settings: Settings instance from dispatcher
     """
-    settings = callback.bot.get("settings")
-
     # Check if user is admin
     if not is_admin(callback.from_user.id, settings):
         await callback.answer("❌ У вас нет прав для выполнения этого действия.", show_alert=True)
@@ -115,8 +114,6 @@ async def process_reject(callback: CallbackQuery) -> None:
 
     # Extract telegram_id from callback data
     telegram_id = int(callback.data.split(":")[1])
-
-    db: Database = callback.bot.get("db")
 
     async for session in db.get_session():
         repo = PlayerRepository(session)
@@ -157,21 +154,19 @@ async def process_reject(callback: CallbackQuery) -> None:
 
 
 @router.message(Command("pending"))
-async def cmd_pending(message: Message) -> None:
+async def cmd_pending(message: Message, db: Database, settings: Settings) -> None:
     """
     Show all pending registrations.
 
     Args:
         message: Incoming message
+        db: Database instance from dispatcher
+        settings: Settings instance from dispatcher
     """
-    settings = message.bot.get("settings")
-
     # Check if user is admin
     if not is_admin(message.from_user.id, settings):
         await message.answer("❌ У вас нет прав для выполнения этой команды.")
         return
-
-    db: Database = message.bot.get("db")
 
     async for session in db.get_session():
         repo = PlayerRepository(session)
@@ -195,21 +190,19 @@ async def cmd_pending(message: Message) -> None:
 
 
 @router.message(Command("list"))
-async def cmd_list(message: Message) -> None:
+async def cmd_list(message: Message, db: Database, settings: Settings) -> None:
     """
     Show all registered players.
 
     Args:
         message: Incoming message
+        db: Database instance from dispatcher
+        settings: Settings instance from dispatcher
     """
-    settings = message.bot.get("settings")
-
     # Check if user is admin
     if not is_admin(message.from_user.id, settings):
         await message.answer("❌ У вас нет прав для выполнения этой команды.")
         return
-
-    db: Database = message.bot.get("db")
 
     async for session in db.get_session():
         repo = PlayerRepository(session)
@@ -244,7 +237,7 @@ async def cmd_list(message: Message) -> None:
 
 
 @router.message(Command("exclude"))
-async def cmd_exclude(message: Message) -> None:
+async def cmd_exclude(message: Message, db: Database, settings: Settings) -> None:
     """
     Exclude player from clan.
 
@@ -252,9 +245,9 @@ async def cmd_exclude(message: Message) -> None:
 
     Args:
         message: Incoming message
+        db: Database instance from dispatcher
+        settings: Settings instance from dispatcher
     """
-    settings = message.bot.get("settings")
-
     # Check if user is admin
     if not is_admin(message.from_user.id, settings):
         await message.answer("❌ У вас нет прав для выполнения этой команды.")
@@ -276,8 +269,6 @@ async def cmd_exclude(message: Message) -> None:
     # Normalize username
     from utils.validators import normalize_username
     username = normalize_username(username)
-
-    db: Database = message.bot.get("db")
 
     async for session in db.get_session():
         repo = PlayerRepository(session)

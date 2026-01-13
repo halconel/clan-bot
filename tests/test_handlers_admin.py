@@ -86,7 +86,7 @@ def create_message(text: str, user: User, chat: Chat) -> Message:
     """Helper to create message object."""
     return Message(
         message_id=1,
-        date=datetime.now().timestamp(),
+        date=datetime.now(),
         chat=chat,
         from_user=user,
         text=text,
@@ -123,30 +123,37 @@ class TestApproveCallback:
                 screenshot_path="/path/to/screenshot.jpg",
             )
             await repo.save_pending(pending)
-            break
 
         # Create callback
-        message = create_message("", admin_user, admin_chat)
-        message.caption = "Test pending application"
-        message.edit_caption = AsyncMock()
+        message = Message(
+            message_id=1,
+            date=datetime.now(),
+            chat=admin_chat,
+            from_user=admin_user,
+            caption="Test pending application",
+        )
         callback = create_callback(f"approve:{pending_user_id}", admin_user, message)
-        callback.answer = AsyncMock()
-        callback.bot = MagicMock()
-        callback.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
-        callback.bot.send_message = AsyncMock()
 
-        await process_approve(callback)
+        # Mock bot and message methods
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        # Use object.__setattr__ to bypass frozen model
+        object.__setattr__(callback, '_bot', mock_bot)
 
-        # Check that approval was processed
-        callback.answer.assert_called_once()
-        assert "одобрена" in callback.answer.call_args[0][0].lower()
+        with patch.object(CallbackQuery, 'answer', new=AsyncMock()) as mock_answer, \
+             patch.object(Message, 'edit_caption', new=AsyncMock()) as mock_edit:
+            await process_approve(callback, database, test_settings)
 
-        # Check that message was edited
-        message.edit_caption.assert_called_once()
+            # Check that approval was processed
+            mock_answer.assert_called_once()
+            assert "одобрена" in mock_answer.call_args[0][0].lower()
 
-        # Check that user was notified
-        callback.bot.send_message.assert_called_once()
-        assert callback.bot.send_message.call_args[1]["chat_id"] == pending_user_id
+            # Check that message was edited
+            mock_edit.assert_called_once()
+
+            # Check that user was notified
+            mock_bot.send_message.assert_called_once()
+            assert mock_bot.send_message.call_args[1]["chat_id"] == pending_user_id
 
         # Check that player was added to database
         async for session in database.get_session():
@@ -159,7 +166,6 @@ class TestApproveCallback:
             # Check that pending was removed
             pending = await repo.get_pending(pending_user_id)
             assert pending is None
-            break
 
     @pytest.mark.asyncio
     async def test_approve_by_non_admin(
@@ -168,15 +174,13 @@ class TestApproveCallback:
         """Test that non-admin cannot approve."""
         message = create_message("", user, chat)
         callback = create_callback("approve:123456789", user, message)
-        callback.answer = AsyncMock()
-        callback.bot = MagicMock()
-        callback.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await process_approve(callback)
+        with patch.object(CallbackQuery, 'answer', new=AsyncMock()) as mock_answer:
+            await process_approve(callback, database, test_settings)
 
-        # Check that rejection was sent
-        callback.answer.assert_called_once()
-        assert "нет прав" in callback.answer.call_args[1]["text"].lower()
+            # Check that rejection was sent
+            mock_answer.assert_called_once()
+            assert "нет прав" in mock_answer.call_args[0][0].lower()
 
 
 class TestRejectCallback:
@@ -198,30 +202,39 @@ class TestRejectCallback:
                 screenshot_path="/path/to/screenshot.jpg",
             )
             await repo.save_pending(pending)
-            break
 
         # Create callback
-        message = create_message("", admin_user, admin_chat)
-        message.caption = "Test pending application"
-        message.edit_caption = AsyncMock()
+        message = Message(
+            message_id=1,
+            date=datetime.now(),
+            chat=admin_chat,
+            from_user=admin_user,
+            caption="Test pending application",
+        )
         callback = create_callback(f"reject:{pending_user_id}", admin_user, message)
-        callback.answer = AsyncMock()
-        callback.bot = MagicMock()
-        callback.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
-        callback.bot.send_message = AsyncMock()
 
-        await process_reject(callback)
+        # Mock bot and message methods
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        # Use object.__setattr__ to bypass frozen model
+        object.__setattr__(callback, '_bot', mock_bot)
 
-        # Check that rejection was processed
-        callback.answer.assert_called_once()
-        assert "отклонена" in callback.answer.call_args[0][0].lower()
+        with patch.object(CallbackQuery, 'answer', new=AsyncMock()) as mock_answer, \
+             patch.object(Message, 'edit_caption', new=AsyncMock()) as mock_edit:
+            await process_reject(callback, database, test_settings)
+
+            # Check that rejection was processed
+            mock_answer.assert_called_once()
+            assert "отклонена" in mock_answer.call_args[0][0].lower()
+
+            # Check that message was edited
+            mock_edit.assert_called_once()
 
         # Check that pending was removed
         async for session in database.get_session():
             repo = PlayerRepository(session)
             pending = await repo.get_pending(pending_user_id)
             assert pending is None
-            break
 
 
 class TestPendingCommand:
@@ -243,22 +256,19 @@ class TestPendingCommand:
                     screenshot_path=f"/path/to/screenshot{i}.jpg",
                 )
                 await repo.save_pending(pending)
-            break
 
         message = create_message("/pending", admin_user, admin_chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_pending(message)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_pending(message, database, test_settings)
 
-        # Check that response was sent
-        message.answer.assert_called_once()
-        response_text = message.answer.call_args[0][0]
-        assert "ожидающие заявки" in response_text.lower()
-        assert "Player0" in response_text
-        assert "Player1" in response_text
-        assert "Player2" in response_text
+            # Check that response was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "ожидающие заявки" in response_text.lower()
+            assert "Player0" in response_text
+            assert "Player1" in response_text
+            assert "Player2" in response_text
 
     @pytest.mark.asyncio
     async def test_pending_empty(
@@ -266,16 +276,14 @@ class TestPendingCommand:
     ):
         """Test showing pending when there are no applications."""
         message = create_message("/pending", admin_user, admin_chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_pending(message)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_pending(message, database, test_settings)
 
-        # Check that empty message was sent
-        message.answer.assert_called_once()
-        response_text = message.answer.call_args[0][0]
-        assert "нет ожидающих" in response_text.lower()
+            # Check that empty message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "нет ожидающих" in response_text.lower()
 
 
 class TestListCommand:
@@ -310,23 +318,20 @@ class TestListCommand:
                 status="Отчислен",
             )
             await repo.add_player(excluded_player)
-            break
 
         message = create_message("/list", admin_user, admin_chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_list(message)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_list(message, database, test_settings)
 
-        # Check that response was sent
-        message.answer.assert_called_once()
-        response_text = message.answer.call_args[0][0]
-        assert "всего игроков: 4" in response_text.lower()
-        assert "активные (3)" in response_text.lower()
-        assert "Player0" in response_text
-        assert "отчисленные (1)" in response_text.lower()
-        assert "ExcludedPlayer" in response_text
+            # Check that response was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "всего игроков: 4" in response_text.lower()
+            assert "активные (3)" in response_text.lower()
+            assert "Player0" in response_text
+            assert "отчисленные (1)" in response_text.lower()
+            assert "ExcludedPlayer" in response_text
 
 
 class TestExcludeCommand:
@@ -350,28 +355,30 @@ class TestExcludeCommand:
                 status="Активен",
             )
             await repo.add_player(player)
-            break
 
         message = create_message("/exclude @testplayer Нарушение правил", admin_user, admin_chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
-        message.bot.send_message = AsyncMock()
 
-        await cmd_exclude(message)
+        # Mock bot methods
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        # Use object.__setattr__ to bypass frozen model
+        object.__setattr__(message, '_bot', mock_bot)
 
-        # Check that success message was sent
-        message.answer.assert_called_once()
-        response_text = message.answer.call_args[0][0]
-        assert "отчислен" in response_text.lower()
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_exclude(message, database, test_settings)
+
+            # Check that success message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "отчислен" in response_text.lower()
 
         # Check that player was excluded in database
         async for session in database.get_session():
             repo = PlayerRepository(session)
             player = await repo.get_player(player_id)
+            assert player is not None
             assert player.status == "Отчислен"
             assert player.exclusion_reason == "Нарушение правил"
-            break
 
     @pytest.mark.asyncio
     async def test_exclude_invalid_format(
@@ -379,16 +386,14 @@ class TestExcludeCommand:
     ):
         """Test exclude with invalid command format."""
         message = create_message("/exclude @testplayer", admin_user, admin_chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_exclude(message)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_exclude(message, database, test_settings)
 
-        # Check that error message was sent
-        message.answer.assert_called_once()
-        response_text = message.answer.call_args[0][0]
-        assert "неверный формат" in response_text.lower()
+            # Check that error message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "неверный формат" in response_text.lower()
 
     @pytest.mark.asyncio
     async def test_exclude_non_existing_player(
@@ -396,13 +401,11 @@ class TestExcludeCommand:
     ):
         """Test excluding player that doesn't exist."""
         message = create_message("/exclude @nonexistent Причина", admin_user, admin_chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_exclude(message)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_exclude(message, database, test_settings)
 
-        # Check that error message was sent
-        message.answer.assert_called_once()
-        response_text = message.answer.call_args[0][0]
-        assert "не найден" in response_text.lower()
+            # Check that error message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "не найден" in response_text.lower()

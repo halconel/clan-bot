@@ -10,6 +10,7 @@ from aiogram.types import Message
 
 from bot.keyboards.admin import get_approve_reject_keyboard
 from bot.states.registration import RegistrationStates
+from config.settings import Settings
 from database.database import Database
 from database.repository import PlayerRepository
 from models.player import PendingRegistration
@@ -19,16 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 @router.message(Command("register"))
-async def cmd_register(message: Message, state: FSMContext) -> None:
+async def cmd_register(message: Message, state: FSMContext, db: Database) -> None:
     """
     Start registration process.
 
     Args:
         message: Incoming message
         state: FSM context
+        db: Database instance from dispatcher
     """
-    # Get database from dispatcher
-    db: Database = message.bot.get("db")
 
     # Check if user is already registered or has pending request
     async for session in db.get_session():
@@ -91,13 +91,15 @@ async def process_nickname(message: Message, state: FSMContext) -> None:
 
 
 @router.message(RegistrationStates.waiting_for_screenshot, F.photo)
-async def process_screenshot(message: Message, state: FSMContext) -> None:
+async def process_screenshot(message: Message, state: FSMContext, db: Database, settings: Settings) -> None:
     """
     Process screenshot upload.
 
     Args:
         message: Incoming message with photo
         state: FSM context
+        db: Database instance from dispatcher
+        settings: Settings instance from dispatcher
     """
     # Get user data from FSM
     data = await state.get_data()
@@ -111,10 +113,6 @@ async def process_screenshot(message: Message, state: FSMContext) -> None:
     # Get the largest photo
     photo = message.photo[-1]
     file_id = photo.file_id
-
-    # Get database and settings
-    db: Database = message.bot.get("db")
-    settings = message.bot.get("settings")
 
     # Save screenshot locally
     file = await message.bot.get_file(file_id)

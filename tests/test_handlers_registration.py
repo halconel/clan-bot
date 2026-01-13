@@ -10,7 +10,7 @@ from aiogram.fsm.storage.base import StorageKey
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Chat, Message, PhotoSize, User
 
-from bot.handlers.registration import cmd_register, process_nickname, process_screenshot
+from bot.handlers.registration import cmd_register, process_nickname, process_screenshot, invalid_screenshot
 from bot.states.registration import RegistrationStates
 from config.settings import Settings, TelegramConfig, DatabaseConfig, StorageConfig, LoggingConfig
 from database.database import Database
@@ -99,7 +99,7 @@ def create_message(text: str, user: User, chat: Chat, **kwargs) -> Message:
     """Helper to create message object."""
     return Message(
         message_id=1,
-        date=datetime.now().timestamp(),
+        date=datetime.now(),
         chat=chat,
         from_user=user,
         text=text,
@@ -116,16 +116,14 @@ class TestRegisterCommand:
     ):
         """Test registration of a new user."""
         message = create_message("/register", user, chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_register(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_register(message, fsm_context, database)
 
-        # Check that bot sent response
-        message.answer.assert_called_once()
-        call_text = message.answer.call_args[0][0]
-        assert "игровой никнейм" in call_text.lower()
+            # Check that bot sent response
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "игровой никнейм" in call_text.lower()
 
         # Check FSM state
         state = await fsm_context.get_state()
@@ -150,19 +148,16 @@ class TestRegisterCommand:
                 status="Активен",
             )
             await repo.add_player(player)
-            break
 
         message = create_message("/register", user, chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_register(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_register(message, fsm_context, database)
 
-        # Check that bot sent rejection message
-        message.answer.assert_called_once()
-        call_text = message.answer.call_args[0][0]
-        assert "уже зарегистрированы" in call_text.lower()
+            # Check that bot sent rejection message
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "уже зарегистрированы" in call_text.lower()
 
         # Check FSM state was not set
         state = await fsm_context.get_state()
@@ -185,19 +180,16 @@ class TestRegisterCommand:
                 screenshot_path="/path/to/screenshot.jpg",
             )
             await repo.save_pending(pending)
-            break
 
         message = create_message("/register", user, chat)
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
 
-        await cmd_register(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await cmd_register(message, fsm_context, database)
 
-        # Check that bot sent rejection message
-        message.answer.assert_called_once()
-        call_text = message.answer.call_args[0][0]
-        assert "уже подана" in call_text.lower()
+            # Check that bot sent rejection message
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "заявка уже отправлена" in call_text.lower()
 
 
 class TestNicknameProcess:
@@ -209,14 +201,14 @@ class TestNicknameProcess:
         await fsm_context.set_state(RegistrationStates.waiting_for_nickname)
 
         message = create_message("TestPlayer", user, chat)
-        message.answer = AsyncMock()
 
-        await process_nickname(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await process_nickname(message, fsm_context)
 
-        # Check that bot requested screenshot
-        message.answer.assert_called_once()
-        call_text = message.answer.call_args[0][0]
-        assert "скриншот" in call_text.lower()
+            # Check that bot requested screenshot
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "скриншот" in call_text.lower()
 
         # Check FSM state changed
         state = await fsm_context.get_state()
@@ -232,14 +224,14 @@ class TestNicknameProcess:
         await fsm_context.set_state(RegistrationStates.waiting_for_nickname)
 
         message = create_message("AB", user, chat)
-        message.answer = AsyncMock()
 
-        await process_nickname(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await process_nickname(message, fsm_context)
 
-        # Check that bot sent error message
-        message.answer.assert_called_once()
-        call_text = message.answer.call_args[0][0]
-        assert "3 до 20 символов" in call_text
+            # Check that bot sent error message
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "слишком короткий" in call_text.lower()
 
         # Check FSM state did not change
         state = await fsm_context.get_state()
@@ -251,14 +243,14 @@ class TestNicknameProcess:
         await fsm_context.set_state(RegistrationStates.waiting_for_nickname)
 
         message = create_message("Test@Player!", user, chat)
-        message.answer = AsyncMock()
 
-        await process_nickname(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await process_nickname(message, fsm_context)
 
-        # Check that bot sent error message
-        message.answer.assert_called_once()
-        call_text = message.answer.call_args[0][0]
-        assert "только буквы" in call_text.lower()
+            # Check that bot sent error message
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "только буквы" in call_text.lower()
 
 
 class TestScreenshotProcess:
@@ -280,30 +272,30 @@ class TestScreenshotProcess:
             height=600,
             file_size=50000,
         )
-        message = create_message("", user, chat)
-        message.photo = [photo]
-        message.answer = AsyncMock()
-        message.bot = MagicMock()
-        message.bot.get = MagicMock(side_effect=lambda key: database if key == "db" else test_settings)
+        message = create_message("", user, chat, photo=[photo])
 
         # Mock file download
         mock_file = MagicMock()
         mock_file.file_path = "photos/test.jpg"
-        message.bot.get_file = AsyncMock(return_value=mock_file)
-        message.bot.download_file = AsyncMock(return_value=b"fake_image_data")
-        message.bot.send_photo = AsyncMock()
+        mock_bot = MagicMock()
+        mock_bot.get_file = AsyncMock(return_value=mock_file)
+        mock_bot.download_file = AsyncMock(return_value=b"fake_image_data")
+        mock_bot.send_photo = AsyncMock()
+        # Use object.__setattr__ to bypass frozen model
+        object.__setattr__(message, '_bot', mock_bot)
 
-        await process_screenshot(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await process_screenshot(message, fsm_context, database, test_settings)
 
-        # Check that screenshot was downloaded
-        message.bot.get_file.assert_called_once_with(photo.file_id)
-        message.bot.download_file.assert_called_once()
+            # Check that screenshot was downloaded
+            mock_bot.get_file.assert_called_once_with(photo.file_id)
+            mock_bot.download_file.assert_called_once()
 
-        # Check that confirmation was sent
-        message.answer.assert_called()
+            # Check that confirmation was sent
+            mock_answer.assert_called()
 
-        # Check that notification was sent to admin
-        message.bot.send_photo.assert_called_once()
+            # Check that notification was sent to admin
+            mock_bot.send_photo.assert_called_once()
 
         # Check FSM state was cleared
         state = await fsm_context.get_state()
@@ -316,7 +308,6 @@ class TestScreenshotProcess:
             assert pending is not None
             assert pending.nickname == "TestPlayer"
             assert pending.username == f"@{user.username}"
-            break
 
     @pytest.mark.asyncio
     async def test_no_photo_sent(self, fsm_context: FSMContext, user: User, chat: Chat):
@@ -324,16 +315,15 @@ class TestScreenshotProcess:
         await fsm_context.set_state(RegistrationStates.waiting_for_screenshot)
 
         message = create_message("Some text", user, chat)
-        message.photo = None
-        message.answer = AsyncMock()
 
-        await process_screenshot(message, fsm_context)
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await invalid_screenshot(message)
 
-        # Check that bot sent error message
-        message.answer.assert_called_once()
-        call_text = message.answer.call_args[0][0]
-        assert "скриншот" in call_text.lower()
+            # Check that bot sent error message
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "отправьте" in call_text.lower() and "фотографию" in call_text.lower()
 
-        # Check FSM state did not change
+        # Check FSM state did not change (should remain in waiting_for_screenshot)
         state = await fsm_context.get_state()
         assert state == RegistrationStates.waiting_for_screenshot
