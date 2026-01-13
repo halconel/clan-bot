@@ -1,107 +1,25 @@
 """Integration tests for admin handlers."""
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from aiogram.types import CallbackQuery, Chat, Message, User
 
-from bot.handlers.admin import cmd_exclude, cmd_list, cmd_pending, process_approve, process_reject
-from config.settings import DatabaseConfig, LoggingConfig, Settings, StorageConfig, TelegramConfig
+from bot.handlers.admin import (
+    cmd_exclude,
+    cmd_list,
+    cmd_pending,
+    process_approve,
+    process_reject,
+)
+from config.settings import Settings
 from database.database import Database
 from database.repository import PlayerRepository
 from models.player import PendingRegistration, Player
 
-
-@pytest.fixture
-def test_settings(tmp_path):
-    """Create test settings."""
-    screenshots_dir = tmp_path / "screenshots"
-    screenshots_dir.mkdir()
-
-    return Settings(
-        telegram=TelegramConfig(
-            bot_token="123456:TEST_TOKEN",
-            leader_telegram_id=999999999,
-        ),
-        database=DatabaseConfig(
-            database_url="sqlite+aiosqlite:///:memory:",
-        ),
-        storage=StorageConfig(
-            screenshots_dir=str(screenshots_dir),
-            temp_storage_file=str(tmp_path / "pending.json"),
-        ),
-        logging=LoggingConfig(
-            log_level="INFO",
-            log_file=str(tmp_path / "test.log"),
-        ),
-    )
-
-
-@pytest.fixture
-async def database(test_settings):
-    """Create test database."""
-    db = Database(test_settings.database.database_url, echo=False)
-    db.init()
-    await db.create_tables()
-    yield db
-    await db.close()
-
-
-@pytest.fixture
-def user():
-    """Create test user."""
-    return User(
-        id=123456789,
-        is_bot=False,
-        first_name="Test",
-        username="testuser",
-    )
-
-
-@pytest.fixture
-def admin_user(test_settings):
-    """Create admin user."""
-    return User(
-        id=test_settings.telegram.leader_telegram_id,
-        is_bot=False,
-        first_name="Admin",
-        username="admin",
-    )
-
-
-@pytest.fixture
-def chat():
-    """Create test chat."""
-    return Chat(id=123456789, type="private")
-
-
-@pytest.fixture
-def admin_chat(test_settings):
-    """Create admin chat."""
-    return Chat(id=test_settings.telegram.leader_telegram_id, type="private")
-
-
-def create_message(text: str, user: User, chat: Chat) -> Message:
-    """Helper to create message object."""
-    return Message(
-        message_id=1,
-        date=datetime.now(),
-        chat=chat,
-        from_user=user,
-        text=text,
-    )
-
-
-def create_callback(data: str, user: User, message: Message) -> CallbackQuery:
-    """Helper to create callback query object."""
-    return CallbackQuery(
-        id="test_callback",
-        from_user=user,
-        data=data,
-        message=message,
-        chat_instance="test_instance",
-    )
+# Import helper functions from conftest
+from tests.conftest import create_callback, create_message
 
 
 class TestApproveCallback:

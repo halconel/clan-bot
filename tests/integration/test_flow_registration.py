@@ -1,52 +1,16 @@
 """Integration tests for registration flow through Dispatcher."""
 
-import pytest
 from datetime import datetime
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from aiogram import Bot, Dispatcher
+import pytest
+from aiogram import Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import Update, Message, User, Chat, CallbackQuery, PhotoSize
+from aiogram.types import Chat, Message, PhotoSize, Update, User
 
-from bot.handlers import common, registration, admin
-from config.settings import Settings, TelegramConfig, DatabaseConfig, StorageConfig, LoggingConfig
+from bot.handlers import admin, common, registration
+from config.settings import Settings
 from database.database import Database
-
-
-@pytest.fixture
-def test_settings(tmp_path):
-    """Create test settings."""
-    screenshots_dir = tmp_path / "screenshots"
-    screenshots_dir.mkdir()
-
-    return Settings(
-        telegram=TelegramConfig(
-            bot_token="123456:TEST_TOKEN",
-            leader_telegram_id=999999999,
-        ),
-        database=DatabaseConfig(
-            database_url="sqlite+aiosqlite:///:memory:",
-        ),
-        storage=StorageConfig(
-            screenshots_dir=str(screenshots_dir),
-            temp_storage_file=str(tmp_path / "pending.json"),
-        ),
-        logging=LoggingConfig(
-            log_level="INFO",
-            log_file=str(tmp_path / "test.log"),
-        ),
-    )
-
-
-@pytest.fixture
-async def database(test_settings):
-    """Create test database."""
-    db = Database(test_settings.database.database_url, echo=False)
-    db.init()
-    await db.create_tables()
-    yield db
-    await db.close()
 
 
 @pytest.fixture(scope="module")
@@ -78,21 +42,7 @@ async def dispatcher(database, test_settings, module_dispatcher):
     return module_dispatcher
 
 
-@pytest.fixture
-def bot():
-    """Create mock bot."""
-    mock_bot = MagicMock(spec=Bot)
-    mock_bot.id = 123456
-    mock_bot.token = "123456:TEST_TOKEN"
-    # Mock bot methods
-    mock_bot.send_message = AsyncMock()
-    mock_bot.send_photo = AsyncMock()
-    mock_bot.get_file = AsyncMock()
-    mock_bot.download_file = AsyncMock()
-    return mock_bot
-
-
-def create_update(message: Message = None, callback_query: CallbackQuery = None) -> Update:
+def create_update(message: Message = None, callback_query=None) -> Update:
     """Create Update object."""
     return Update(
         update_id=1,

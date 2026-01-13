@@ -1,110 +1,25 @@
 """Integration tests for registration handlers."""
 
-import pytest
 from datetime import datetime
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.storage.base import StorageKey
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Chat, Message, PhotoSize, User
 
-from bot.handlers.registration import cmd_register, process_nickname, process_screenshot, invalid_screenshot
+from bot.handlers.registration import (
+    cmd_register,
+    invalid_screenshot,
+    process_nickname,
+    process_screenshot,
+)
 from bot.states.registration import RegistrationStates
-from config.settings import Settings, TelegramConfig, DatabaseConfig, StorageConfig, LoggingConfig
+from config.settings import Settings
 from database.database import Database
 from database.repository import PlayerRepository
 
-
-@pytest.fixture
-def test_settings(tmp_path):
-    """Create test settings."""
-    screenshots_dir = tmp_path / "screenshots"
-    screenshots_dir.mkdir()
-
-    return Settings(
-        telegram=TelegramConfig(
-            bot_token="123456:TEST_TOKEN",
-            leader_telegram_id=999999999,
-        ),
-        database=DatabaseConfig(
-            database_url="sqlite+aiosqlite:///:memory:",
-        ),
-        storage=StorageConfig(
-            screenshots_dir=str(screenshots_dir),
-            temp_storage_file=str(tmp_path / "pending.json"),
-        ),
-        logging=LoggingConfig(
-            log_level="INFO",
-            log_file=str(tmp_path / "test.log"),
-        ),
-    )
-
-
-@pytest.fixture
-async def database(test_settings):
-    """Create test database."""
-    db = Database(test_settings.database.database_url, echo=False)
-    db.init()
-    await db.create_tables()
-    yield db
-    await db.close()
-
-
-@pytest.fixture
-def storage():
-    """Create FSM storage."""
-    return MemoryStorage()
-
-
-@pytest.fixture
-def user():
-    """Create test user."""
-    return User(
-        id=123456789,
-        is_bot=False,
-        first_name="Test",
-        last_name="User",
-        username="testuser",
-    )
-
-
-@pytest.fixture
-def admin_user(test_settings):
-    """Create admin user."""
-    return User(
-        id=test_settings.telegram.leader_telegram_id,
-        is_bot=False,
-        first_name="Admin",
-        username="admin",
-    )
-
-
-@pytest.fixture
-def chat():
-    """Create test chat."""
-    return Chat(id=123456789, type="private")
-
-
-@pytest.fixture
-async def fsm_context(storage, user, chat):
-    """Create FSM context."""
-    bot_id = 123456
-    key = StorageKey(bot_id=bot_id, chat_id=chat.id, user_id=user.id)
-    return FSMContext(storage=storage, key=key)
-
-
-def create_message(text: str, user: User, chat: Chat, **kwargs) -> Message:
-    """Helper to create message object."""
-    return Message(
-        message_id=1,
-        date=datetime.now(),
-        chat=chat,
-        from_user=user,
-        text=text,
-        **kwargs,
-    )
+# Import helper functions from conftest
+from tests.conftest import create_message
 
 
 class TestRegisterCommand:

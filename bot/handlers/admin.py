@@ -7,6 +7,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
+from bot.handlers.decorators import admin_only
 from config.settings import Settings
 from database.database import Database
 from database.repository import PlayerRepository
@@ -16,12 +17,8 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-def is_admin(user_id: int, settings) -> bool:
-    """Check if user is admin."""
-    return user_id == settings.telegram.leader_telegram_id
-
-
 @router.callback_query(F.data.startswith("approve:"))
+@admin_only
 async def process_approve(callback: CallbackQuery, db: Database, settings: Settings) -> None:
     """
     Handle approval of pending registration.
@@ -31,10 +28,6 @@ async def process_approve(callback: CallbackQuery, db: Database, settings: Setti
         db: Database instance from dispatcher
         settings: Settings instance from dispatcher
     """
-    # Check if user is admin
-    if not is_admin(callback.from_user.id, settings):
-        await callback.answer("❌ У вас нет прав для выполнения этого действия.", show_alert=True)
-        return
 
     # Extract telegram_id from callback data
     telegram_id = int(callback.data.split(":")[1])
@@ -98,6 +91,7 @@ async def process_approve(callback: CallbackQuery, db: Database, settings: Setti
 
 
 @router.callback_query(F.data.startswith("reject:"))
+@admin_only
 async def process_reject(callback: CallbackQuery, db: Database, settings: Settings) -> None:
     """
     Handle rejection of pending registration.
@@ -107,10 +101,6 @@ async def process_reject(callback: CallbackQuery, db: Database, settings: Settin
         db: Database instance from dispatcher
         settings: Settings instance from dispatcher
     """
-    # Check if user is admin
-    if not is_admin(callback.from_user.id, settings):
-        await callback.answer("❌ У вас нет прав для выполнения этого действия.", show_alert=True)
-        return
 
     # Extract telegram_id from callback data
     telegram_id = int(callback.data.split(":")[1])
@@ -154,6 +144,7 @@ async def process_reject(callback: CallbackQuery, db: Database, settings: Settin
 
 
 @router.message(Command("pending"))
+@admin_only
 async def cmd_pending(message: Message, db: Database, settings: Settings) -> None:
     """
     Show all pending registrations.
@@ -163,10 +154,6 @@ async def cmd_pending(message: Message, db: Database, settings: Settings) -> Non
         db: Database instance from dispatcher
         settings: Settings instance from dispatcher
     """
-    # Check if user is admin
-    if not is_admin(message.from_user.id, settings):
-        await message.answer("❌ У вас нет прав для выполнения этой команды.")
-        return
 
     async for session in db.get_session():
         repo = PlayerRepository(session)
@@ -190,6 +177,7 @@ async def cmd_pending(message: Message, db: Database, settings: Settings) -> Non
 
 
 @router.message(Command("list"))
+@admin_only
 async def cmd_list(message: Message, db: Database, settings: Settings) -> None:
     """
     Show all registered players.
@@ -199,10 +187,6 @@ async def cmd_list(message: Message, db: Database, settings: Settings) -> None:
         db: Database instance from dispatcher
         settings: Settings instance from dispatcher
     """
-    # Check if user is admin
-    if not is_admin(message.from_user.id, settings):
-        await message.answer("❌ У вас нет прав для выполнения этой команды.")
-        return
 
     async for session in db.get_session():
         repo = PlayerRepository(session)
@@ -237,6 +221,7 @@ async def cmd_list(message: Message, db: Database, settings: Settings) -> None:
 
 
 @router.message(Command("exclude"))
+@admin_only
 async def cmd_exclude(message: Message, db: Database, settings: Settings) -> None:
     """
     Exclude player from clan.
@@ -248,10 +233,6 @@ async def cmd_exclude(message: Message, db: Database, settings: Settings) -> Non
         db: Database instance from dispatcher
         settings: Settings instance from dispatcher
     """
-    # Check if user is admin
-    if not is_admin(message.from_user.id, settings):
-        await message.answer("❌ У вас нет прав для выполнения этой команды.")
-        return
 
     # Parse command
     parts = message.text.split(maxsplit=2)

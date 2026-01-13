@@ -1,54 +1,13 @@
 """Integration tests for common handlers."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from aiogram import Bot, Dispatcher
+import pytest
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.storage.base import StorageKey
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Chat, Message, User
 
 from bot.handlers.common import cmd_cancel, cmd_help, cmd_start
 from bot.states.registration import RegistrationStates
-
-
-@pytest.fixture
-def storage():
-    """Create FSM storage."""
-    return MemoryStorage()
-
-
-@pytest.fixture
-def bot():
-    """Create mock bot."""
-    bot = MagicMock(spec=Bot)
-    bot.id = 123456
-    return bot
-
-
-@pytest.fixture
-def user():
-    """Create test user."""
-    return User(
-        id=123456789,
-        is_bot=False,
-        first_name="Test",
-        username="testuser",
-    )
-
-
-@pytest.fixture
-def chat():
-    """Create test chat."""
-    return Chat(id=123456789, type="private")
-
-
-@pytest.fixture
-async def fsm_context(storage, bot, user, chat):
-    """Create FSM context."""
-    key = StorageKey(bot_id=bot.id, chat_id=chat.id, user_id=user.id)
-    return FSMContext(storage=storage, key=key)
 
 
 class TestStartCommand:
