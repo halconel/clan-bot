@@ -15,9 +15,13 @@ class DatabaseConfig(BaseModel):
         if not v:
             raise ValueError("DATABASE_URL is not configured")
 
+        # Allow SQLite for testing
+        if v.startswith("sqlite"):
+            return v
+
         if not v.startswith(("postgresql://", "postgresql+asyncpg://")):
             raise ValueError(
-                "DATABASE_URL must start with 'postgresql://' or 'postgresql+asyncpg://'"
+                "DATABASE_URL must start with 'postgresql://', 'postgresql+asyncpg://', or 'sqlite' (for testing)"
             )
 
         # Ensure asyncpg driver for async support
