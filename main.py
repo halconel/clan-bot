@@ -5,6 +5,7 @@ import logging
 import sys
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from config.settings import load_settings
@@ -46,7 +47,10 @@ async def main() -> None:
 
     # Initialize bot and dispatcher
     logger.info("Initializing bot...")
-    bot = Bot(token=settings.telegram.bot_token, parse_mode=ParseMode.HTML)
+    bot = Bot(
+        token=settings.telegram.bot_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
     dp = Dispatcher()
 
     # Store database instance in bot data for access in handlers
