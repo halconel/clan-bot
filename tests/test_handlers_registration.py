@@ -27,12 +27,17 @@ class TestRegisterCommand:
 
     @pytest.mark.asyncio
     async def test_register_new_user(
-        self, database: Database, test_settings: Settings, fsm_context: FSMContext, user: User, chat: Chat
+        self,
+        database: Database,
+        test_settings: Settings,
+        fsm_context: FSMContext,
+        user: User,
+        chat: Chat,
     ):
         """Test registration of a new user."""
         message = create_message("/register", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_register(message, fsm_context, database)
 
             # Check that bot sent response
@@ -46,7 +51,12 @@ class TestRegisterCommand:
 
     @pytest.mark.asyncio
     async def test_register_already_registered(
-        self, database: Database, test_settings: Settings, fsm_context: FSMContext, user: User, chat: Chat
+        self,
+        database: Database,
+        test_settings: Settings,
+        fsm_context: FSMContext,
+        user: User,
+        chat: Chat,
     ):
         """Test that already registered user cannot register again."""
         # Add user to database
@@ -66,7 +76,7 @@ class TestRegisterCommand:
 
         message = create_message("/register", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_register(message, fsm_context, database)
 
             # Check that bot sent rejection message
@@ -80,7 +90,12 @@ class TestRegisterCommand:
 
     @pytest.mark.asyncio
     async def test_register_pending_application(
-        self, database: Database, test_settings: Settings, fsm_context: FSMContext, user: User, chat: Chat
+        self,
+        database: Database,
+        test_settings: Settings,
+        fsm_context: FSMContext,
+        user: User,
+        chat: Chat,
     ):
         """Test that user with pending application cannot register again."""
         # Add pending registration
@@ -98,7 +113,7 @@ class TestRegisterCommand:
 
         message = create_message("/register", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_register(message, fsm_context, database)
 
             # Check that bot sent rejection message
@@ -117,7 +132,7 @@ class TestNicknameProcess:
 
         message = create_message("TestPlayer", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await process_nickname(message, fsm_context)
 
             # Check that bot requested screenshot
@@ -140,7 +155,7 @@ class TestNicknameProcess:
 
         message = create_message("AB", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await process_nickname(message, fsm_context)
 
             # Check that bot accepted nickname
@@ -153,13 +168,15 @@ class TestNicknameProcess:
         assert state == RegistrationStates.waiting_for_screenshot
 
     @pytest.mark.asyncio
-    async def test_special_chars_allowed_in_nickname(self, fsm_context: FSMContext, user: User, chat: Chat):
+    async def test_special_chars_allowed_in_nickname(
+        self, fsm_context: FSMContext, user: User, chat: Chat
+    ):
         """Test processing nickname with special characters (allowed in Kingdom Clash)."""
         await fsm_context.set_state(RegistrationStates.waiting_for_nickname)
 
         message = create_message("Test@Player!", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await process_nickname(message, fsm_context)
 
             # Check that bot accepted nickname
@@ -174,7 +191,7 @@ class TestNicknameProcess:
 
         message = create_message("ThisNicknameIsTooLongForTheGame", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await process_nickname(message, fsm_context)
 
             # Check that bot sent error message
@@ -192,7 +209,13 @@ class TestScreenshotProcess:
 
     @pytest.mark.asyncio
     async def test_valid_screenshot(
-        self, database: Database, test_settings: Settings, fsm_context: FSMContext, user: User, chat: Chat, tmp_path
+        self,
+        database: Database,
+        test_settings: Settings,
+        fsm_context: FSMContext,
+        user: User,
+        chat: Chat,
+        tmp_path,
     ):
         """Test processing valid screenshot."""
         await fsm_context.set_state(RegistrationStates.waiting_for_screenshot)
@@ -216,9 +239,9 @@ class TestScreenshotProcess:
         mock_bot.download_file = AsyncMock(return_value=b"fake_image_data")
         mock_bot.send_photo = AsyncMock()
         # Use object.__setattr__ to bypass frozen model
-        object.__setattr__(message, '_bot', mock_bot)
+        object.__setattr__(message, "_bot", mock_bot)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await process_screenshot(message, fsm_context, database, test_settings)
 
             # Check that screenshot was downloaded
@@ -250,7 +273,7 @@ class TestScreenshotProcess:
 
         message = create_message("Some text", user, chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await invalid_screenshot(message)
 
             # Check that bot sent error message

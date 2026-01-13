@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -8,17 +9,15 @@ class GoogleSheetsConfig(BaseModel):
     """Google Sheets API configuration."""
 
     credentials_json: Optional[str] = Field(
-        default=None,
-        description="Path to credentials.json file"
+        default=None, description="Path to credentials.json file"
     )
     credentials: Optional[str] = Field(
-        default=None,
-        description="Google credentials as JSON string (Railway)"
+        default=None, description="Google credentials as JSON string (Railway)"
     )
     spreadsheet_id: str = Field(..., description="Google Sheets spreadsheet ID")
     sheet_name: str = Field(default="Игроки")
 
-    @field_validator('spreadsheet_id')
+    @field_validator("spreadsheet_id")
     @classmethod
     def validate_spreadsheet_id(cls, v: str) -> str:
         if not v or v == "your_spreadsheet_id_here":
@@ -52,12 +51,12 @@ class GoogleSheetsConfig(BaseModel):
             try:
                 return json.loads(self.credentials)
             except json.JSONDecodeError:
-                raise ValueError("GOOGLE_CREDENTIALS contains invalid JSON")
+                raise ValueError("GOOGLE_CREDENTIALS contains invalid JSON") from None
 
         # From file
         creds_path = self.get_credentials_path(base_dir)
         if creds_path and creds_path.exists():
-            with open(creds_path, 'r') as f:
+            with open(creds_path) as f:
                 return json.load(f)
 
         return None

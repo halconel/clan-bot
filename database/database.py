@@ -1,10 +1,15 @@
 """Database connection and session management with dependency injection."""
 
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from database.models import Base
 
@@ -63,11 +68,13 @@ class Database:
 
             # Only add pool settings for non-SQLite databases
             if not self.database_url.startswith("sqlite"):
-                engine_kwargs.update({
-                    "pool_pre_ping": True,  # Verify connections before using
-                    "pool_size": self.pool_size,
-                    "max_overflow": self.max_overflow,
-                })
+                engine_kwargs.update(
+                    {
+                        "pool_pre_ping": True,  # Verify connections before using
+                        "pool_size": self.pool_size,
+                        "max_overflow": self.max_overflow,
+                    }
+                )
 
             self._engine = create_async_engine(self.database_url, **engine_kwargs)
             logger.info("Database engine initialized successfully")

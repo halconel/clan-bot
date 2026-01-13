@@ -91,7 +91,9 @@ async def process_nickname(message: Message, state: FSMContext) -> None:
 
 
 @router.message(RegistrationStates.waiting_for_screenshot, F.photo)
-async def process_screenshot(message: Message, state: FSMContext, db: Database, settings: Settings) -> None:
+async def process_screenshot(
+    message: Message, state: FSMContext, db: Database, settings: Settings
+) -> None:
     """
     Process screenshot upload.
 

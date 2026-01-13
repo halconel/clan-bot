@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import BIGINT, TIMESTAMP, VARCHAR, Index, String, Text
+from sqlalchemy import BIGINT, TIMESTAMP, VARCHAR, Index, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 

@@ -1,11 +1,12 @@
 """Tests for database repository layer."""
 
-import pytest
 from datetime import datetime
+
+import pytest
 
 from database.database import Database
 from database.repository import PlayerRepository
-from models.player import Player, PendingRegistration
+from models.player import PendingRegistration, Player
 
 
 @pytest.fixture
@@ -197,9 +198,7 @@ class TestExcludePlayer:
         await repository.add_player(sample_player)
 
         result = await repository.exclude_player(
-            sample_player.telegram_id,
-            reason="Test exclusion",
-            excluded_by="test_admin"
+            sample_player.telegram_id, reason="Test exclusion", excluded_by="test_admin"
         )
         assert result is True
 

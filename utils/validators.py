@@ -1,8 +1,7 @@
 import re
-from typing import Tuple
 
 
-def validate_nickname(nickname: str) -> Tuple[bool, str]:
+def validate_nickname(nickname: str) -> tuple[bool, str]:
     """
     Validate player nickname.
 
@@ -32,7 +31,7 @@ def validate_nickname(nickname: str) -> Tuple[bool, str]:
     return True, ""
 
 
-def validate_username(username: str) -> Tuple[bool, str]:
+def validate_username(username: str) -> tuple[bool, str]:
     """
     Validate Telegram username.
 
@@ -54,8 +53,8 @@ def validate_username(username: str) -> Tuple[bool, str]:
     username = username.strip()
 
     # Add @ if missing
-    if not username.startswith('@'):
-        username = '@' + username
+    if not username.startswith("@"):
+        username = "@" + username
 
     if len(username) < 6:  # @ + min 5 chars
         return False, "Username слишком короткий"
@@ -64,7 +63,7 @@ def validate_username(username: str) -> Tuple[bool, str]:
         return False, "Username слишком длинный"
 
     # Check format: @username (letters, numbers, underscores only)
-    pattern = r'^@[a-zA-Z0-9_]+$'
+    pattern = r"^@[a-zA-Z0-9_]+$"
     if not re.match(pattern, username):
         return False, "Неверный формат username. Используйте @username"
 
@@ -82,12 +81,12 @@ def normalize_username(username: str) -> str:
         Username with @ prefix
     """
     username = username.strip()
-    if not username.startswith('@'):
-        return '@' + username
+    if not username.startswith("@"):
+        return "@" + username
     return username
 
 
-def parse_add_command(text: str) -> Tuple[bool, str, str, str]:
+def parse_add_command(text: str) -> tuple[bool, str, str, str]:
     """
     Parse /add command arguments.
 
@@ -119,7 +118,7 @@ def parse_add_command(text: str) -> Tuple[bool, str, str, str]:
     return True, normalize_username(username), nickname.strip(), ""
 
 
-def parse_accept_command(text: str) -> Tuple[bool, str, str]:
+def parse_accept_command(text: str) -> tuple[bool, str, str]:
     """
     Parse /accept command arguments.
 
@@ -156,8 +155,8 @@ def extract_username_from_user(user) -> str:
     Returns:
         Username with @ prefix, or empty string if no username
     """
-    if hasattr(user, 'username') and user.username:
-        return '@' + user.username
+    if hasattr(user, "username") and user.username:
+        return "@" + user.username
     return ""
 
 
@@ -173,10 +172,10 @@ def sanitize_filename(filename: str) -> str:
     """
     # Remove or replace invalid filename characters
     invalid_chars = r'[<>:"/\\|?*]'
-    sanitized = re.sub(invalid_chars, '_', filename)
+    sanitized = re.sub(invalid_chars, "_", filename)
 
     # Remove leading/trailing spaces and dots
-    sanitized = sanitized.strip('. ')
+    sanitized = sanitized.strip(". ")
 
     # Limit length
     max_length = 255

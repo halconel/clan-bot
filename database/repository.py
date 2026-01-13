@@ -55,7 +55,7 @@ class PlayerRepository:
 
             logger.info(f"Added player: {player.username} (telegram_id={player.telegram_id})")
             return self._to_dataclass(db_player)
-        except IntegrityError as e:
+        except IntegrityError:
             logger.error(f"Player already exists: {player.telegram_id}")
             raise
         except SQLAlchemyError as e:
@@ -140,9 +140,7 @@ class PlayerRepository:
             logger.error(f"Failed to update player {telegram_id} status: {e}")
             raise
 
-    async def exclude_player(
-        self, telegram_id: int, reason: str, excluded_by: str
-    ) -> bool:
+    async def exclude_player(self, telegram_id: int, reason: str, excluded_by: str) -> bool:
         """
         Exclude player from the clan.
 
@@ -223,7 +221,7 @@ class PlayerRepository:
                 f"Saved pending registration: {pending.username} (telegram_id={pending.telegram_id})"
             )
             return self._pending_to_dataclass(db_pending)
-        except IntegrityError as e:
+        except IntegrityError:
             logger.error(f"Pending registration already exists: {pending.telegram_id}")
             raise
         except SQLAlchemyError as e:
@@ -335,7 +333,9 @@ class PlayerRepository:
             registration_date=db_player.registration_date.strftime("%Y-%m-%d"),
             status=db_player.status,
             added_by=db_player.added_by,
-            exclusion_date=db_player.exclusion_date.strftime("%Y-%m-%d %H:%M:%S") if db_player.exclusion_date else None,
+            exclusion_date=db_player.exclusion_date.strftime("%Y-%m-%d %H:%M:%S")
+            if db_player.exclusion_date
+            else None,
             exclusion_reason=db_player.exclusion_reason,
             excluded_by=db_player.excluded_by,
             notes=db_player.notes or "",

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
 
@@ -19,16 +20,16 @@ class TelegramConfig(BaseModel):
     bot_token: str = Field(..., description="Telegram Bot API token")
     leader_telegram_id: int = Field(..., description="Telegram ID of clan leader")
 
-    @field_validator('bot_token')
+    @field_validator("bot_token")
     @classmethod
     def validate_bot_token(cls, v: str) -> str:
         if not v or v == "YOUR_BOT_TOKEN_HERE":
             raise ValueError("BOT_TOKEN is not configured")
-        if ':' not in v:
+        if ":" not in v:
             raise ValueError("BOT_TOKEN has invalid format")
         return v
 
-    @field_validator('leader_telegram_id')
+    @field_validator("leader_telegram_id")
     @classmethod
     def validate_leader_id(cls, v: int) -> int:
         if v <= 0:
@@ -84,4 +85,4 @@ def load_settings() -> Settings:
         return settings
 
     except ValueError as e:
-        raise ValueError(f"Configuration error: {e}")
+        raise ValueError(f"Configuration error: {e}") from e

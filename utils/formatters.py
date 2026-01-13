@@ -1,5 +1,6 @@
 from typing import Optional
-from models.player import Player, PendingRegistration
+
+from models.player import PendingRegistration, Player
 
 
 def format_welcome_message() -> str:
@@ -53,10 +54,7 @@ def format_registration_pending(nickname: str) -> str:
 
 def format_registration_approved() -> str:
     """Format message when registration is approved."""
-    return (
-        "Поздравляем! Вы приняты в клан Kingdom Clash! 🎉\n\n"
-        "Добро пожаловать в нашу команду!"
-    )
+    return "Поздравляем! Вы приняты в клан Kingdom Clash! 🎉\n\nДобро пожаловать в нашу команду!"
 
 
 def format_registration_rejected(reason: Optional[str] = None) -> str:
@@ -78,10 +76,7 @@ def format_registration_rejected(reason: Optional[str] = None) -> str:
 
 def format_already_registered() -> str:
     """Format message when user tries to register again."""
-    return (
-        "Вы уже зарегистрированы в клане!\n\n"
-        "Используйте /help для просмотра доступных команд."
-    )
+    return "Вы уже зарегистрированы в клане!\n\nИспользуйте /help для просмотра доступных команд."
 
 
 def format_pending_registration_exists() -> str:
@@ -115,9 +110,7 @@ def format_approval_success(player: Player) -> str:
     Args:
         player: Approved player data
     """
-    return (
-        f"Игрок {player.username} ({player.nickname}) успешно добавлен в клан!"
-    )
+    return f"Игрок {player.username} ({player.nickname}) успешно добавлен в клан!"
 
 
 def format_rejection_success(username: str) -> str:
@@ -187,10 +180,7 @@ def format_help_message(is_leader: bool = False) -> str:
 
 def format_operation_cancelled() -> str:
     """Format message when operation is cancelled."""
-    return (
-        "Операция отменена.\n\n"
-        "Отправьте /start для новой регистрации."
-    )
+    return "Операция отменена.\n\nОтправьте /start для новой регистрации."
 
 
 def format_access_denied() -> str:

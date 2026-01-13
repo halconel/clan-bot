@@ -249,6 +249,7 @@ async def cmd_exclude(message: Message, db: Database, settings: Settings) -> Non
 
     # Normalize username
     from utils.validators import normalize_username
+
     username = normalize_username(username)
 
     async for session in db.get_session():
@@ -290,6 +291,5 @@ async def cmd_exclude(message: Message, db: Database, settings: Settings) -> Non
         logger.warning(f"Failed to notify excluded player {player.telegram_id}: {e}")
 
     await message.answer(
-        f"✅ Игрок {player.nickname} ({username}) отчислен из клана.\n"
-        f"<b>Причина:</b> {reason}"
+        f"✅ Игрок {player.nickname} ({username}) отчислен из клана.\n<b>Причина:</b> {reason}"
     )

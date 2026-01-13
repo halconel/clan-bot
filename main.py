@@ -48,8 +48,7 @@ async def main() -> None:
     # Initialize bot and dispatcher
     logger.info("Initializing bot...")
     bot = Bot(
-        token=settings.telegram.bot_token,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+        token=settings.telegram.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     dp = Dispatcher()
 

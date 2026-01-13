@@ -1,7 +1,6 @@
 """Shared fixtures for all tests."""
 
 from datetime import datetime
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

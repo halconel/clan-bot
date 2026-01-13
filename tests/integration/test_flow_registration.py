@@ -79,7 +79,7 @@ class TestFullRegistrationFlow:
         message = create_message("/start")
         update = create_update(message=message)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update)
 
             # Check that welcome message was sent
@@ -95,7 +95,7 @@ class TestFullRegistrationFlow:
         message = create_message("/help")
         update = create_update(message=message)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update)
 
             # Check that help text was sent
@@ -109,7 +109,7 @@ class TestFullRegistrationFlow:
         message = create_message("/register")
         update = create_update(message=message)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update)
 
             # Check that registration started
@@ -129,7 +129,7 @@ class TestFullRegistrationFlow:
         message1 = create_message("/register", user_id=user_id, username=username)
         update1 = create_update(message=message1)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update1)
             mock_answer.assert_called_once()
             assert "никнейм" in mock_answer.call_args[0][0].lower()
@@ -138,7 +138,7 @@ class TestFullRegistrationFlow:
         message2 = create_message("TestPlayer123", user_id=user_id, username=username)
         update2 = create_update(message=message2)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update2)
             mock_answer.assert_called_once()
             assert "скриншот" in mock_answer.call_args[0][0].lower()
@@ -153,7 +153,7 @@ class TestFullRegistrationFlow:
         )
         message3 = create_message("", user_id=user_id, username=username)
         # Use object.__setattr__ to set photo on frozen model
-        object.__setattr__(message3, 'photo', [photo])
+        object.__setattr__(message3, "photo", [photo])
 
         # Mock bot methods for file download
         mock_file = MagicMock()
@@ -162,11 +162,11 @@ class TestFullRegistrationFlow:
         bot.download_file.return_value = b"fake_image_data"
 
         # Mock bot attribute on message
-        object.__setattr__(message3, '_bot', bot)
+        object.__setattr__(message3, "_bot", bot)
 
         update3 = create_update(message=message3)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update3)
 
             # Check that registration was completed
@@ -177,6 +177,7 @@ class TestFullRegistrationFlow:
 
         # Step 4: Verify pending registration was saved
         from database.repository import PlayerRepository
+
         async for session in database.get_session():
             repo = PlayerRepository(session)
             pending = await repo.get_pending(user_id)
@@ -194,8 +195,8 @@ class TestAdminFlow:
     ):
         """Test /pending command through dispatcher."""
         # Add a pending registration first
-        from models.player import PendingRegistration
         from database.repository import PlayerRepository
+        from models.player import PendingRegistration
 
         async for session in database.get_session():
             repo = PlayerRepository(session)
@@ -212,7 +213,7 @@ class TestAdminFlow:
         message = create_message("/pending", user_id=admin_id, username="admin")
         update = create_update(message=message)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update)
 
             # Check that pending applications list was shown
@@ -228,7 +229,7 @@ async def test_dispatcher_middleware_and_di(dispatcher: Dispatcher, bot: MagicMo
     message = create_message("/start")
     update = create_update(message=message)
 
-    with patch.object(Message, 'answer', new=AsyncMock()):
+    with patch.object(Message, "answer", new=AsyncMock()):
         # This should not raise errors about missing dependencies
         await dispatcher.feed_update(bot, update)
 

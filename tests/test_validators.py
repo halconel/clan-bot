@@ -1,11 +1,12 @@
 import pytest
+
 from utils.validators import (
+    normalize_username,
+    parse_accept_command,
+    parse_add_command,
+    sanitize_filename,
     validate_nickname,
     validate_username,
-    normalize_username,
-    parse_add_command,
-    parse_accept_command,
-    sanitize_filename,
 )
 
 
@@ -162,7 +163,9 @@ class TestParseAddCommand:
     @pytest.mark.unit
     def test_add_command_invalid_nickname(self):
         """Test that command with invalid nickname is rejected."""
-        is_valid, username, nickname, error = parse_add_command("/add @player123 ThisNicknameIsTooLong")
+        is_valid, username, nickname, error = parse_add_command(
+            "/add @player123 ThisNicknameIsTooLong"
+        )
         assert not is_valid
         assert "ник" in error.lower()
 

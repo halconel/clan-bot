@@ -56,10 +56,12 @@ class TestApproveCallback:
         mock_bot = MagicMock()
         mock_bot.send_message = AsyncMock()
         # Use object.__setattr__ to bypass frozen model
-        object.__setattr__(callback, '_bot', mock_bot)
+        object.__setattr__(callback, "_bot", mock_bot)
 
-        with patch.object(CallbackQuery, 'answer', new=AsyncMock()) as mock_answer, \
-             patch.object(Message, 'edit_caption', new=AsyncMock()) as mock_edit:
+        with (
+            patch.object(CallbackQuery, "answer", new=AsyncMock()) as mock_answer,
+            patch.object(Message, "edit_caption", new=AsyncMock()) as mock_edit,
+        ):
             await process_approve(callback, database, test_settings)
 
             # Check that approval was processed
@@ -93,7 +95,7 @@ class TestApproveCallback:
         message = create_message("", user, chat)
         callback = create_callback("approve:123456789", user, message)
 
-        with patch.object(CallbackQuery, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(CallbackQuery, "answer", new=AsyncMock()) as mock_answer:
             await process_approve(callback, database, test_settings)
 
             # Check that rejection was sent
@@ -135,10 +137,12 @@ class TestRejectCallback:
         mock_bot = MagicMock()
         mock_bot.send_message = AsyncMock()
         # Use object.__setattr__ to bypass frozen model
-        object.__setattr__(callback, '_bot', mock_bot)
+        object.__setattr__(callback, "_bot", mock_bot)
 
-        with patch.object(CallbackQuery, 'answer', new=AsyncMock()) as mock_answer, \
-             patch.object(Message, 'edit_caption', new=AsyncMock()) as mock_edit:
+        with (
+            patch.object(CallbackQuery, "answer", new=AsyncMock()) as mock_answer,
+            patch.object(Message, "edit_caption", new=AsyncMock()) as mock_edit,
+        ):
             await process_reject(callback, database, test_settings)
 
             # Check that rejection was processed
@@ -177,7 +181,7 @@ class TestPendingCommand:
 
         message = create_message("/pending", admin_user, admin_chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_pending(message, database, test_settings)
 
             # Check that response was sent
@@ -195,7 +199,7 @@ class TestPendingCommand:
         """Test showing pending when there are no applications."""
         message = create_message("/pending", admin_user, admin_chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_pending(message, database, test_settings)
 
             # Check that empty message was sent
@@ -239,7 +243,7 @@ class TestListCommand:
 
         message = create_message("/list", admin_user, admin_chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_list(message, database, test_settings)
 
             # Check that response was sent
@@ -280,9 +284,9 @@ class TestExcludeCommand:
         mock_bot = MagicMock()
         mock_bot.send_message = AsyncMock()
         # Use object.__setattr__ to bypass frozen model
-        object.__setattr__(message, '_bot', mock_bot)
+        object.__setattr__(message, "_bot", mock_bot)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_exclude(message, database, test_settings)
 
             # Check that success message was sent
@@ -305,7 +309,7 @@ class TestExcludeCommand:
         """Test exclude with invalid command format."""
         message = create_message("/exclude @testplayer", admin_user, admin_chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_exclude(message, database, test_settings)
 
             # Check that error message was sent
@@ -320,7 +324,7 @@ class TestExcludeCommand:
         """Test excluding player that doesn't exist."""
         message = create_message("/exclude @nonexistent Причина", admin_user, admin_chat)
 
-        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_exclude(message, database, test_settings)
 
             # Check that error message was sent

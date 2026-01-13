@@ -2,6 +2,7 @@
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.database import Database, create_database
@@ -107,7 +108,7 @@ class TestDatabaseSession:
     @pytest.mark.asyncio
     async def test_get_session_rolls_back_on_error(self, initialized_database):
         """Test that session rolls back on error."""
-        with pytest.raises(Exception):
+        with pytest.raises(SQLAlchemyError):
             async for session in initialized_database.get_session():
                 # Force an error
                 await session.execute("INVALID SQL QUERY")
