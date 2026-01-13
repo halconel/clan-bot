@@ -29,32 +29,33 @@ class TestValidateNickname:
         assert "пустым" in error.lower()
 
     @pytest.mark.unit
-    def test_too_short_nickname(self):
-        """Test that nickname shorter than 3 chars is invalid."""
+    def test_short_nickname_valid(self):
+        """Test that short nicknames (1-2 chars) are valid."""
         is_valid, error = validate_nickname("AB")
-        assert not is_valid
-        assert "короткий" in error.lower()
+        assert is_valid
+        assert error == ""
 
     @pytest.mark.unit
     def test_too_long_nickname(self):
-        """Test that nickname longer than 20 chars is invalid."""
-        is_valid, error = validate_nickname("A" * 21)
+        """Test that nickname longer than 15 chars is invalid."""
+        is_valid, error = validate_nickname("A" * 16)
         assert not is_valid
         assert "длинный" in error.lower()
 
     @pytest.mark.unit
-    def test_special_characters_in_nickname(self):
-        """Test that special characters are not allowed."""
-        invalid_nicks = ["Player@123", "Test#User", "Name!", "User$$$"]
-        for nick in invalid_nicks:
+    def test_special_characters_allowed_in_nickname(self):
+        """Test that special characters are allowed (Kingdom Clash allows any characters)."""
+        valid_nicks = ["Player@123", "Test#User", "Name!", "User$$$", "Test-Player_123"]
+        for nick in valid_nicks:
             is_valid, error = validate_nickname(nick)
-            assert not is_valid, f"{nick} should be invalid"
+            assert is_valid, f"{nick} should be valid, got error: {error}"
 
     @pytest.mark.unit
-    def test_emoji_in_nickname(self):
-        """Test that emojis are not allowed."""
+    def test_emoji_allowed_in_nickname(self):
+        """Test that emojis are allowed."""
         is_valid, error = validate_nickname("Player😀")
-        assert not is_valid
+        assert is_valid
+        assert error == ""
 
 
 class TestValidateUsername:
@@ -161,7 +162,7 @@ class TestParseAddCommand:
     @pytest.mark.unit
     def test_add_command_invalid_nickname(self):
         """Test that command with invalid nickname is rejected."""
-        is_valid, username, nickname, error = parse_add_command("/add @player123 A")
+        is_valid, username, nickname, error = parse_add_command("/add @player123 ThisNicknameIsTooLong")
         assert not is_valid
         assert "ник" in error.lower()
 

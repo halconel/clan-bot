@@ -7,9 +7,8 @@ def validate_nickname(nickname: str) -> Tuple[bool, str]:
     Validate player nickname.
 
     Rules:
-    - Length: 3-20 characters
-    - Allowed: letters (any language), numbers, underscores, hyphens, spaces
-    - Not allowed: special characters, emojis
+    - Length: 1-15 characters (as per Kingdom Clash game requirements)
+    - Any characters allowed (including special characters and emojis)
 
     Args:
         nickname: Player's in-game nickname
@@ -24,17 +23,11 @@ def validate_nickname(nickname: str) -> Tuple[bool, str]:
 
     nickname = nickname.strip()
 
-    if len(nickname) < 3:
-        return False, "Ник слишком короткий. Минимум 3 символа"
+    if len(nickname) < 1:
+        return False, "Ник не может быть пустым"
 
-    if len(nickname) > 20:
-        return False, "Ник слишком длинный. Максимум 20 символов"
-
-    # Allow letters (any language), numbers, underscores, hyphens, spaces
-    # Disallow emojis and special characters
-    pattern = r'^[\w\s\-]+$'
-    if not re.match(pattern, nickname, re.UNICODE):
-        return False, "Ник может содержать только буквы, цифры, пробелы, _ и -"
+    if len(nickname) > 15:
+        return False, "Ник слишком длинный. Максимум 15 символов"
 
     return True, ""
 

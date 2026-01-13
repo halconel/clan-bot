@@ -134,8 +134,8 @@ class TestNicknameProcess:
         assert data["nickname"] == "TestPlayer"
 
     @pytest.mark.asyncio
-    async def test_invalid_nickname_too_short(self, fsm_context: FSMContext, user: User, chat: Chat):
-        """Test processing nickname that is too short."""
+    async def test_short_nickname_valid(self, fsm_context: FSMContext, user: User, chat: Chat):
+        """Test processing short nickname (Kingdom Clash allows any length 1-15)."""
         await fsm_context.set_state(RegistrationStates.waiting_for_nickname)
 
         message = create_message("AB", user, chat)
@@ -143,18 +143,18 @@ class TestNicknameProcess:
         with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
             await process_nickname(message, fsm_context)
 
-            # Check that bot sent error message
+            # Check that bot accepted nickname
             mock_answer.assert_called_once()
             call_text = mock_answer.call_args[0][0]
-            assert "слишком короткий" in call_text.lower()
+            assert "принят" in call_text.lower()
 
-        # Check FSM state did not change
+        # Check FSM state changed to waiting for screenshot
         state = await fsm_context.get_state()
-        assert state == RegistrationStates.waiting_for_nickname
+        assert state == RegistrationStates.waiting_for_screenshot
 
     @pytest.mark.asyncio
-    async def test_invalid_nickname_special_chars(self, fsm_context: FSMContext, user: User, chat: Chat):
-        """Test processing nickname with invalid characters."""
+    async def test_special_chars_allowed_in_nickname(self, fsm_context: FSMContext, user: User, chat: Chat):
+        """Test processing nickname with special characters (allowed in Kingdom Clash)."""
         await fsm_context.set_state(RegistrationStates.waiting_for_nickname)
 
         message = create_message("Test@Player!", user, chat)
@@ -162,10 +162,29 @@ class TestNicknameProcess:
         with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
             await process_nickname(message, fsm_context)
 
+            # Check that bot accepted nickname
+            mock_answer.assert_called_once()
+            call_text = mock_answer.call_args[0][0]
+            assert "принят" in call_text.lower()
+
+    @pytest.mark.asyncio
+    async def test_invalid_nickname_too_long(self, fsm_context: FSMContext, user: User, chat: Chat):
+        """Test processing nickname that is too long (> 15 chars)."""
+        await fsm_context.set_state(RegistrationStates.waiting_for_nickname)
+
+        message = create_message("ThisNicknameIsTooLongForTheGame", user, chat)
+
+        with patch.object(Message, 'answer', new=AsyncMock()) as mock_answer:
+            await process_nickname(message, fsm_context)
+
             # Check that bot sent error message
             mock_answer.assert_called_once()
             call_text = mock_answer.call_args[0][0]
-            assert "только буквы" in call_text.lower()
+            assert "длинный" in call_text.lower()
+
+        # Check FSM state did not change
+        state = await fsm_context.get_state()
+        assert state == RegistrationStates.waiting_for_nickname
 
 
 class TestScreenshotProcess:
