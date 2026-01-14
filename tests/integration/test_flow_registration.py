@@ -1,12 +1,13 @@
 """Integration tests for registration flow through Dispatcher."""
 
 from datetime import datetime
+from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiogram import Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import Chat, Message, PhotoSize, Update, User
+from aiogram.types import CallbackQuery, Chat, Message, PhotoSize, Update, User
 
 from bot.handlers import admin, common, registration
 from config.settings import Settings
@@ -42,7 +43,9 @@ async def dispatcher(database, test_settings, module_dispatcher):
     return module_dispatcher
 
 
-def create_update(message: Message = None, callback_query=None) -> Update:
+def create_update(
+    message: Optional[Message] = None, callback_query: Optional[CallbackQuery] = None
+) -> Update:
     """Create Update object."""
     return Update(
         update_id=1,
@@ -67,6 +70,34 @@ def create_message(text: str, user_id: int = 123456789, username: str = "testuse
         chat=chat,
         from_user=user,
         text=text,
+    )
+
+
+def create_callback_query(
+    data: str, user_id: int = 123456789, username: str = "testuser"
+) -> CallbackQuery:
+    """Create CallbackQuery object."""
+    user = User(
+        id=user_id,
+        is_bot=False,
+        first_name="Test",
+        username=username,
+    )
+    chat = Chat(id=user_id, type="private")
+    message = Message(
+        message_id=1,
+        date=datetime.now(),
+        chat=chat,
+        from_user=user,
+        text="",
+    )
+
+    return CallbackQuery(
+        id="callback_123",
+        from_user=user,
+        chat_instance="instance_123",
+        data=data,
+        message=message,
     )
 
 
@@ -112,29 +143,64 @@ class TestFullRegistrationFlow:
         with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await dispatcher.feed_update(bot, update)
 
-            # Check that registration started
-            mock_answer.assert_called_once()
-            call_text = mock_answer.call_args[0][0]
-            assert "никнейм" in call_text.lower()
+            # Check that captcha was shown (2 messages: explanation + question)
+            assert mock_answer.call_count == 2
+
+            # First message should be captcha explanation
+            first_call_text = mock_answer.call_args_list[0][0][0]
+            assert "безопасност" in first_call_text.lower()
+
+            # Second message should be captcha question
+            second_call_kwargs = mock_answer.call_args_list[1][1]
+            assert "reply_markup" in second_call_kwargs
 
     @pytest.mark.asyncio
     async def test_full_registration_flow_with_fsm(
         self, dispatcher: Dispatcher, bot: MagicMock, database: Database
     ):
-        """Test complete registration flow: /register -> nickname -> screenshot -> pending."""
+        """Test complete registration flow: /register -> captcha -> nickname -> screenshot -> pending."""
         user_id = 987654321
         username = "newplayer"
 
-        # Step 1: /register command
+        # Step 1: /register command - shows captcha
         message1 = create_message("/register", user_id=user_id, username=username)
         update1 = create_update(message=message1)
 
-        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
+        # Mock generate_captcha to return predictable question
+        from utils.captcha import CaptchaQuestion
+
+        test_captcha = CaptchaQuestion(
+            question="Сколько будет 2 + 2?",
+            correct_answer="4",
+            wrong_answers=["3", "5"],
+        )
+
+        with (
+            patch("bot.handlers.registration.generate_captcha", return_value=test_captcha),
+            patch.object(Message, "answer", new=AsyncMock()) as mock_answer,
+        ):
             await dispatcher.feed_update(bot, update1)
+            # Should send captcha (2 messages: explanation + question)
+            assert mock_answer.call_count == 2
+            assert "безопасност" in mock_answer.call_args_list[0][0][0].lower()
+
+        # Step 2: Answer captcha correctly
+        callback1 = create_callback_query("captcha:4", user_id=user_id, username=username)
+        update1_callback = create_update(callback_query=callback1)
+
+        with (
+            patch.object(Message, "answer", new=AsyncMock()) as mock_answer,
+            patch.object(Message, "edit_text", new=AsyncMock()) as mock_edit,
+            patch.object(CallbackQuery, "answer", new=AsyncMock()),
+        ):
+            await dispatcher.feed_update(bot, update1_callback)
+
+            # Should edit message and ask for nickname
+            mock_edit.assert_called_once()
             mock_answer.assert_called_once()
             assert "никнейм" in mock_answer.call_args[0][0].lower()
 
-        # Step 2: Send nickname
+        # Step 3: Send nickname
         message2 = create_message("TestPlayer123", user_id=user_id, username=username)
         update2 = create_update(message=message2)
 

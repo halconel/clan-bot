@@ -40,14 +40,20 @@ class TestRegisterCommand:
         with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
             await cmd_register(message, fsm_context, database)
 
-            # Check that bot sent response
-            mock_answer.assert_called_once()
-            call_text = mock_answer.call_args[0][0]
-            assert "игровой никнейм" in call_text.lower()
+            # Check that bot sent captcha (2 messages: explanation + question)
+            assert mock_answer.call_count == 2
 
-        # Check FSM state
+            # First message should be captcha explanation
+            first_call_text = mock_answer.call_args_list[0][0][0]
+            assert "безопасност" in first_call_text.lower()
+
+            # Second message should be captcha question with keyboard
+            second_call_kwargs = mock_answer.call_args_list[1][1]
+            assert "reply_markup" in second_call_kwargs
+
+        # Check FSM state is waiting for captcha
         state = await fsm_context.get_state()
-        assert state == RegistrationStates.waiting_for_nickname
+        assert state == RegistrationStates.waiting_for_captcha
 
     @pytest.mark.asyncio
     async def test_register_already_registered(

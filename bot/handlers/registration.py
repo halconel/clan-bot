@@ -6,7 +6,7 @@ from datetime import datetime
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from bot.keyboards.admin import get_approve_reject_keyboard
 from bot.states.registration import RegistrationStates
@@ -14,6 +14,7 @@ from config.settings import Settings
 from database.database import Database
 from database.repository import PlayerRepository
 from models.player import PendingRegistration
+from utils.captcha import generate_captcha, get_captcha_explanation, get_captcha_keyboard_data
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -51,13 +52,79 @@ async def cmd_register(message: Message, state: FSMContext, db: Database) -> Non
             )
             return
 
-    # Start registration process
-    await message.answer(
-        "📝 Начинаем регистрацию!\n\n"
-        "Пожалуйста, отправьте ваш <b>игровой никнейм</b>.\n"
-        "Это имя, которое отображается в игре."
+    # Start registration process with captcha
+    captcha = generate_captcha()
+
+    # Store captcha question in FSM data for validation
+    await state.update_data(
+        captcha_question=captcha.question, captcha_answer=captcha.correct_answer
     )
-    await state.set_state(RegistrationStates.waiting_for_nickname)
+
+    # Send captcha explanation
+    await message.answer(get_captcha_explanation())
+
+    # Create inline keyboard with captcha options
+    options = get_captcha_keyboard_data(captcha)
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=text, callback_data=data)] for text, data in options
+        ]
+    )
+
+    # Send captcha question
+    await message.answer(f"❓ <b>{captcha.question}</b>", reply_markup=keyboard)
+
+    await state.set_state(RegistrationStates.waiting_for_captcha)
+
+
+@router.callback_query(RegistrationStates.waiting_for_captcha, F.data.startswith("captcha:"))
+async def process_captcha(callback: CallbackQuery, state: FSMContext) -> None:
+    """
+    Process captcha answer.
+
+    Args:
+        callback: Callback query with user's answer
+        state: FSM context
+    """
+    # Extract answer from callback data
+    user_answer = callback.data.split(":", 1)[1]
+
+    # Get stored captcha data
+    data = await state.get_data()
+    correct_answer = data.get("captcha_answer", "")
+
+    # Validate answer
+    if user_answer.lower().strip() == correct_answer.lower().strip():
+        # Correct answer - proceed to nickname input
+        await callback.message.edit_text(
+            f"✅ Правильно! {data.get('captcha_question', '')}\nОтвет: <b>{correct_answer}</b>"
+        )
+        await callback.message.answer(
+            "📝 Отлично! Теперь отправьте ваш <b>игровой никнейм</b>.\n"
+            "Это имя, которое отображается в игре Kingdom Clash.\n\n"
+            "<i>💡 Рассмотрение заявки может занять до 24 часов, так как "
+            "требуется обсуждение администраторами, которые онлайн в разное время.</i>"
+        )
+        await state.set_state(RegistrationStates.waiting_for_nickname)
+        await callback.answer()
+    else:
+        # Wrong answer - get attempt count
+        attempts = data.get("captcha_attempts", 0) + 1
+        await state.update_data(captcha_attempts=attempts)
+
+        if attempts >= 3:
+            # Too many attempts - reset and ask to try again later
+            await callback.message.edit_text(
+                "❌ Неправильный ответ.\n\n"
+                "Вы исчерпали количество попыток (3). "
+                "Пожалуйста, попробуйте зарегистрироваться позже (через 5 минут)."
+            )
+            await state.clear()
+            await callback.answer("Слишком много неправильных ответов", show_alert=True)
+        else:
+            # Wrong answer but has attempts left
+            remaining = 3 - attempts
+            await callback.answer(f"❌ Неправильно. Осталось попыток: {remaining}", show_alert=True)
 
 
 @router.message(RegistrationStates.waiting_for_nickname, F.text)

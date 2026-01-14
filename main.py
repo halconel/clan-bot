@@ -56,6 +56,12 @@ async def main() -> None:
     dp["db"] = db
     dp["settings"] = settings
 
+    # Register middleware
+    from bot.middleware.rate_limit import RateLimitMiddleware
+
+    dp.message.middleware(RateLimitMiddleware(rate_limit=5, time_window=60))
+    logger.info("Rate limiting middleware registered (5 requests per 60 seconds)")
+
     # Register routers/handlers
     from bot.handlers import admin, common, registration
 
