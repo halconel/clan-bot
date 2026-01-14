@@ -8,8 +8,7 @@ config/credentials.json
 credentials.json
 
 # Data directory (screenshots and temporary storage)
-data/
-*.json
+data/screenshots
 
 # Allow specific JSON files
 !requirements.txt

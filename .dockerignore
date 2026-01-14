@@ -3,7 +3,7 @@
 .env.example
 
 # Data directory (screenshots, logs)
-data/
+data/screenshots
 
 # Python cache
 __pycache__/
