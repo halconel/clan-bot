@@ -76,7 +76,7 @@ async def process_approve(callback: CallbackQuery, db: Database, settings: Setti
             text=(
                 "🎉 <b>Поздравляем!</b>\n\n"
                 "Ваша заявка на вступление в телеграм группу клана одобрена!\n"
-                "Для входа нажмите сюда: <a href='https://t.me/+PXf3qmLnGSlmZDAy'>👉 ВХОД</a>\n"
+                "Для входа нажмите сюда: <a href='https://t.me/+k_Alie0yCT8wODJi'>👉 ВХОД</a>\n"
                 f"Добро пожаловать, <b>{pending.nickname}</b>!"
             ),
         )
