@@ -7,6 +7,7 @@ import pytest
 from aiogram.types import CallbackQuery, Chat, Message, User
 
 from bot.handlers.admin import (
+    cmd_approve,
     cmd_exclude,
     cmd_list,
     cmd_pending,
@@ -254,6 +255,130 @@ class TestListCommand:
             assert "Player0" in response_text
             assert "отчисленные (1)" in response_text.lower()
             assert "ExcludedPlayer" in response_text
+
+
+class TestApproveCommand:
+    """Test /approve command."""
+
+    @pytest.mark.asyncio
+    async def test_approve_by_username(
+        self, database: Database, test_settings: Settings, admin_user: User, admin_chat: Chat
+    ):
+        """Test approving registration by username."""
+        # Add pending registration
+        pending_user_id = 123456789
+        async for session in database.get_session():
+            repo = PlayerRepository(session)
+            pending = PendingRegistration(
+                telegram_id=pending_user_id,
+                username="@testuser",
+                nickname="TestPlayer",
+                screenshot_path="/path/to/screenshot.jpg",
+            )
+            await repo.save_pending(pending)
+
+        message = create_message("/approve @testuser", admin_user, admin_chat)
+
+        # Mock bot methods
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        # Use object.__setattr__ to bypass frozen model
+        object.__setattr__(message, "_bot", mock_bot)
+
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
+            await cmd_approve(message, database, test_settings)
+
+            # Check that success message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "одобрена" in response_text.lower()
+            assert "TestPlayer" in response_text
+
+            # Check that user was notified
+            mock_bot.send_message.assert_called_once()
+            assert mock_bot.send_message.call_args[1]["chat_id"] == pending_user_id
+
+        # Check that player was added to database
+        async for session in database.get_session():
+            repo = PlayerRepository(session)
+            player = await repo.get_player(pending_user_id)
+            assert player is not None
+            assert player.nickname == "TestPlayer"
+            assert player.status == "Активен"
+
+            # Check that pending was removed
+            pending = await repo.get_pending(pending_user_id)
+            assert pending is None
+
+    @pytest.mark.asyncio
+    async def test_approve_invalid_format(
+        self, database: Database, test_settings: Settings, admin_user: User, admin_chat: Chat
+    ):
+        """Test approve with invalid command format."""
+        message = create_message("/approve", admin_user, admin_chat)
+
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
+            await cmd_approve(message, database, test_settings)
+
+            # Check that error message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "неверный формат" in response_text.lower()
+
+    @pytest.mark.asyncio
+    async def test_approve_non_existing_pending(
+        self, database: Database, test_settings: Settings, admin_user: User, admin_chat: Chat
+    ):
+        """Test approving pending that doesn't exist."""
+        message = create_message("/approve @nonexistent", admin_user, admin_chat)
+
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
+            await cmd_approve(message, database, test_settings)
+
+            # Check that error message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "не найдена" in response_text.lower()
+
+    @pytest.mark.asyncio
+    async def test_approve_already_registered(
+        self, database: Database, test_settings: Settings, admin_user: User, admin_chat: Chat
+    ):
+        """Test approving user that is already registered."""
+        # Add both pending and player with same telegram_id
+        user_id = 123456789
+        async for session in database.get_session():
+            repo = PlayerRepository(session)
+
+            # Add as player first
+            player = Player(
+                telegram_id=user_id,
+                username="@testuser",
+                nickname="TestPlayer",
+                screenshot_path="/path.jpg",
+                registration_date=datetime.now().strftime("%Y-%m-%d"),
+                status="Активен",
+            )
+            await repo.add_player(player)
+
+            # Add pending (same user somehow got through)
+            pending = PendingRegistration(
+                telegram_id=user_id,
+                username="@testuser",
+                nickname="TestPlayer",
+                screenshot_path="/path/to/screenshot.jpg",
+            )
+            await repo.save_pending(pending)
+
+        message = create_message("/approve @testuser", admin_user, admin_chat)
+
+        with patch.object(Message, "answer", new=AsyncMock()) as mock_answer:
+            await cmd_approve(message, database, test_settings)
+
+            # Check that error message was sent
+            mock_answer.assert_called_once()
+            response_text = mock_answer.call_args[0][0]
+            assert "уже зарегистрирован" in response_text.lower()
 
 
 class TestExcludeCommand:

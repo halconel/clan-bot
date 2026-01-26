@@ -57,6 +57,7 @@ async def cmd_help(message: Message) -> None:
 
 <b>Для администраторов:</b>
 /pending - Показать ожидающие заявки
+/approve @username - Одобрить заявку игрока
 /list - Показать список всех игроков
 /exclude @username причина - Отчислить игрока из клана
 

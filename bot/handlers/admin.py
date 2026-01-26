@@ -221,6 +221,95 @@ async def cmd_list(message: Message, db: Database, settings: Settings) -> None:
     await message.answer(response)
 
 
+@router.message(Command("approve"))
+@admin_only
+async def cmd_approve(message: Message, db: Database, settings: Settings) -> None:
+    """
+    Approve pending registration by username.
+
+    Usage: /approve @username
+
+    Args:
+        message: Incoming message
+        db: Database instance from dispatcher
+        settings: Settings instance from dispatcher
+    """
+
+    # Parse command
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer(
+            "❌ Неверный формат команды.\n\n"
+            "Использование: /approve @username\n"
+            "Пример: /approve @player123"
+        )
+        return
+
+    username = parts[1]
+
+    # Normalize username
+    from utils.validators import normalize_username
+
+    username = normalize_username(username)
+
+    async for session in db.get_session():
+        repo = PlayerRepository(session)
+
+        # Find pending registration by username
+        pending = await repo.get_pending_by_username(username)
+        if not pending:
+            await message.answer(f"❌ Заявка от пользователя {username} не найдена.")
+            return
+
+        # Check if already registered
+        if await repo.check_player_exists(pending.telegram_id):
+            await message.answer(f"❌ Пользователь {username} уже зарегистрирован.")
+            await repo.remove_pending(pending.telegram_id)
+            return
+
+        # Convert pending to player
+        player = Player(
+            telegram_id=pending.telegram_id,
+            username=pending.username,
+            nickname=pending.nickname,
+            screenshot_path=pending.screenshot_path,
+            registration_date=datetime.now().strftime("%Y-%m-%d"),
+            status="Активен",
+            added_by=f"@{message.from_user.username or message.from_user.id}",
+            notes="Одобрено через команду /approve",
+        )
+
+        # Add to database
+        try:
+            await repo.add_player(player)
+            await repo.remove_pending(pending.telegram_id)
+            logger.info(f"Player {pending.username} approved by admin via command")
+        except Exception as e:
+            logger.error(f"Failed to approve player: {e}")
+            await message.answer("❌ Ошибка при одобрении заявки.")
+            return
+
+    # Notify user
+    try:
+        await message.bot.send_message(
+            chat_id=pending.telegram_id,
+            text=(
+                "🎉 <b>Поздравляем!</b>\n\n"
+                "Ваша заявка на вступление в телеграм группу клана одобрена!\n"
+                "Для входа нажмите сюда: <a href='https://t.me/+k_Alie0yCT8wODJi'>👉 ВХОД</a>\n"
+                f"Добро пожаловать, <b>{pending.nickname}</b>!"
+            ),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to notify user {pending.telegram_id}: {e}")
+
+    await message.answer(
+        f"✅ Заявка одобрена!\n\n"
+        f"👤 Игрок: <b>{pending.nickname}</b> ({username})\n"
+        f"🆔 Telegram ID: <code>{pending.telegram_id}</code>"
+    )
+
+
 @router.message(Command("exclude"))
 @admin_only
 async def cmd_exclude(message: Message, db: Database, settings: Settings) -> None:
